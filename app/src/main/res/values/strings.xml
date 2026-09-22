@@ -1,0 +1,37 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="plugin_name">Jellyfin Wallpapers</string>
+    <string name="plugin_uuid">f193d23f-c334-4d52-a488-e1515add8b2b</string>
+    <string name="plugin_description">Backdrops straight from your Jellyfin server, filtered by library, type, genre and rating.</string>
+    <string name="settings">Settings</string>
+    <string name="projectivy_not_installed">Projectivy Launcher is not installed.</string>
+
+    <string name="setting_status">Connection</string>
+    <string name="setting_server_url">Server URL</string>
+    <string name="setting_api_key">API key</string>
+    <string name="setting_user">Jellyfin user</string>
+    <string name="setting_libraries">Libraries</string>
+    <string name="setting_item_types">Content types</string>
+    <string name="setting_genres">Genres</string>
+    <string name="setting_ratings">Age ratings</string>
+    <string name="setting_unplayed_only">Unwatched only</string>
+    <string name="setting_unplayed_only_desc">Only show items you have not played yet</string>
+    <string name="setting_4k">4K backdrops</string>
+    <string name="setting_4k_desc">Request 3840x2160 instead of 1920x1080</string>
+    <string name="setting_client">Open with</string>
+    <string name="setting_refresh">Refresh now</string>
+    <string name="setting_refresh_desc">Fetch a new set of backdrops immediately</string>
+
+    <string name="status_unknown">Not connected yet</string>
+    <string name="status_connected">Connected to %1$s (%2$s)</string>
+    <string name="status_error">Error: %1$s</string>
+    <string name="not_set">Not set</string>
+    <string name="all">All</string>
+    <string name="n_selected">%1$d selected</string>
+    <string name="nothing_available">Nothing available — check the connection first</string>
+    <string name="multiselect_empty_hint">Select nothing to allow everything</string>
+    <string name="clear_selection">Clear</string>
+    <string name="done">Done</string>
+    <string name="refreshing">Refreshing…</string>
+    <string name="refreshed">Cached %1$d backdrops</string>
+</resources>
