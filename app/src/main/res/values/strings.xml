@@ -14,8 +14,10 @@
     <string name="setting_item_types">Content types</string>
     <string name="setting_genres">Genres</string>
     <string name="setting_ratings">Age ratings</string>
-    <string name="setting_unplayed_only">Unwatched only</string>
-    <string name="setting_unplayed_only_desc">Only show items you have not played yet</string>
+    <string name="setting_watch_state">Watch state</string>
+    <string name="watch_state_all">All</string>
+    <string name="watch_state_unwatched">Unwatched only</string>
+    <string name="watch_state_watched">Watched only</string>
     <string name="setting_4k">4K backdrops</string>
     <string name="setting_4k_desc">Request 3840x2160 instead of 1920x1080</string>
     <string name="setting_client">Open with</string>

@@ -19,7 +19,7 @@ a channel, with no way to filter by genre.
 - Content types (Movie / Series)
 - Genres
 - Age ratings
-- Unwatched only
+- Watch state (all / unwatched only / watched only)
 
 Leaving a list empty means "allow everything".
 

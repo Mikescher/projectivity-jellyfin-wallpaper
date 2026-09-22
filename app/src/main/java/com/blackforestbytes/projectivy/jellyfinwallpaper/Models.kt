@@ -33,6 +33,8 @@ data class Item(
     @SerialName("SeriesName") val seriesName: String? = null,
     @SerialName("ImageTags") val imageTags: Map<String, String> = emptyMap(),
     @SerialName("BackdropImageTags") val backdropImageTags: List<String> = emptyList(),
+    @SerialName("ParentBackdropItemId") val parentBackdropItemId: String? = null,
+    @SerialName("ParentBackdropImageTags") val parentBackdropImageTags: List<String> = emptyList(),
 )
 
 /** `GET /Items/Filters` — the legacy shape, the only one that also returns ratings and years. */
@@ -42,6 +44,17 @@ data class QueryFiltersLegacy(
     @SerialName("OfficialRatings") val officialRatings: List<String> = emptyList(),
     @SerialName("Years") val years: List<Int> = emptyList(),
 )
+
+/** Tri-state for Jellyfin's `isPlayed` query parameter; ALL omits it. */
+enum class PlayedFilter(val key: String) {
+    ALL("all"),
+    UNPLAYED("unplayed"),
+    PLAYED("played");
+
+    companion object {
+        fun from(key: String?): PlayedFilter? = entries.firstOrNull { it.key == key }
+    }
+}
 
 /** One entry of the on-disk wallpaper cache. */
 @Serializable

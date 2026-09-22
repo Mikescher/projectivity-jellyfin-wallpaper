@@ -85,10 +85,9 @@ class SettingsFragment : GuidedStepSupportFragment() {
                 .description(summary(PreferencesManager.officialRatings)).build()
         )
         actions.add(
-            GuidedAction.Builder(ctx).id(ACTION_UNPLAYED)
-                .title(R.string.setting_unplayed_only).description(R.string.setting_unplayed_only_desc)
-                .checkSetId(GuidedAction.CHECKBOX_CHECK_SET_ID)
-                .checked(PreferencesManager.unplayedOnly).build()
+            GuidedAction.Builder(ctx).id(ACTION_PLAYED)
+                .title(R.string.setting_watch_state).description(playedFilterLabel())
+                .subActions(playedFilterSubActions()).build()
         )
         actions.add(
             GuidedAction.Builder(ctx).id(ACTION_FOUR_K)
@@ -130,11 +129,6 @@ class SettingsFragment : GuidedStepSupportFragment() {
                 getString(R.string.setting_ratings), "official_ratings",
                 filters.officialRatings, filters.officialRatings
             )
-            ACTION_UNPLAYED -> {
-                PreferencesManager.unplayedOnly = !PreferencesManager.unplayedOnly
-                action.isChecked = PreferencesManager.unplayedOnly
-                notifyActionChanged(findActionPositionById(action.id))
-            }
             ACTION_FOUR_K -> {
                 PreferencesManager.fourK = !PreferencesManager.fourK
                 action.isChecked = PreferencesManager.fourK
@@ -175,6 +169,10 @@ class SettingsFragment : GuidedStepSupportFragment() {
                     updateDescription(ACTION_LIBRARIES, librarySummary())
                     loadRemoteData()
                 }
+            }
+            action.id >= SUB_PLAYED_BASE && action.id < SUB_PLAYED_BASE + 1000 -> {
+                PreferencesManager.playedFilter = PlayedFilter.entries[(action.id - SUB_PLAYED_BASE).toInt()]
+                updateDescription(ACTION_PLAYED, playedFilterLabel())
             }
             action.id >= SUB_CLIENT_BASE && action.id < SUB_CLIENT_BASE + 1000 -> {
                 val index = (action.id - SUB_CLIENT_BASE).toInt()
@@ -277,6 +275,19 @@ class SettingsFragment : GuidedStepSupportFragment() {
             .build()
     }.toMutableList()
 
+    private fun playedFilterSubActions(): MutableList<GuidedAction> =
+        PlayedFilter.entries.mapIndexed { index, filter ->
+            GuidedAction.Builder(context)
+                .id(SUB_PLAYED_BASE + index)
+                .title(getString(PLAYED_FILTER_LABELS[index]))
+                .checkSetId(GuidedAction.DEFAULT_CHECK_SET_ID)
+                .checked(filter == PreferencesManager.playedFilter)
+                .build()
+        }.toMutableList()
+
+    private fun playedFilterLabel(): String =
+        getString(PLAYED_FILTER_LABELS[PreferencesManager.playedFilter.ordinal])
+
     private fun clientSubActions(): MutableList<GuidedAction> = CLIENT_PACKAGES.mapIndexed { index, pkg ->
         GuidedAction.Builder(context)
             .id(SUB_CLIENT_BASE + index)
@@ -319,13 +330,21 @@ class SettingsFragment : GuidedStepSupportFragment() {
         private const val ACTION_TYPES = 6L
         private const val ACTION_GENRES = 7L
         private const val ACTION_RATINGS = 8L
-        private const val ACTION_UNPLAYED = 9L
+        private const val ACTION_PLAYED = 9L
         private const val ACTION_FOUR_K = 10L
         private const val ACTION_CLIENT = 11L
         private const val ACTION_REFRESH = 12L
 
         private const val SUB_USER_BASE = 100_000L
         private const val SUB_CLIENT_BASE = 200_000L
+        private const val SUB_PLAYED_BASE = 300_000L
+
+        /** Indexed by [PlayedFilter.ordinal]. */
+        private val PLAYED_FILTER_LABELS = listOf(
+            R.string.watch_state_all,
+            R.string.watch_state_unwatched,
+            R.string.watch_state_watched,
+        )
 
         private val ITEM_TYPE_VALUES = listOf("Movie", "Series")
         private val SUPPORTED_COLLECTION_TYPES = setOf("movies", "tvshows", "boxsets", "homevideos")

@@ -124,7 +124,11 @@ class JellyfinClient(
         if (config.officialRatings.isNotEmpty()) {
             b.addQueryParameter("officialRatings", config.officialRatings.joinToString("|"))
         }
-        if (config.unplayedOnly) b.addQueryParameter("isPlayed", "false")
+        when (config.playedFilter) {
+            PlayedFilter.ALL -> Unit
+            PlayedFilter.UNPLAYED -> b.addQueryParameter("isPlayed", "false")
+            PlayedFilter.PLAYED -> b.addQueryParameter("isPlayed", "true")
+        }
 
         return get<ItemsResult>(b.build()).items
     }
@@ -134,9 +138,12 @@ class JellyfinClient(
      * handed straight to Projectivy, which fetches it in its own process.
      */
     fun backdropUrl(item: Item, width: Int, height: Int): String? {
+        // Jellyfin only fills the Parent* fields when a parent backdrop really exists, so both
+        // branches are backed by an image that is known to be there.
         val (id, tag) = when {
             item.backdropImageTags.isNotEmpty() -> item.id to item.backdropImageTags.first()
-            item.seriesId != null -> item.seriesId to null
+            item.parentBackdropItemId != null && item.parentBackdropImageTags.isNotEmpty() ->
+                item.parentBackdropItemId to item.parentBackdropImageTags.first()
             else -> return null
         }
         val b = root().newBuilder()
@@ -144,8 +151,8 @@ class JellyfinClient(
             .addQueryParameter("fillWidth", width.toString())
             .addQueryParameter("fillHeight", height.toString())
             .addQueryParameter("quality", "90")
-        // The tag turns on a strong ETag plus immutable caching; without it caching is weak.
-        if (tag != null) b.addQueryParameter("tag", tag)
+            // The tag turns on a strong ETag plus immutable caching; without it caching is weak.
+            .addQueryParameter("tag", tag)
         return b.build().toString()
     }
 
@@ -161,5 +168,5 @@ data class QueryConfig(
     val itemTypes: Set<String>,
     val genres: Set<String>,
     val officialRatings: Set<String>,
-    val unplayedOnly: Boolean,
+    val playedFilter: PlayedFilter,
 )

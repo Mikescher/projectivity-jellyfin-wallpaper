@@ -28,6 +28,7 @@ object PreferencesManager {
     private const val KEY_ITEM_TYPES = "item_types"
     private const val KEY_GENRES = "genres"
     private const val KEY_RATINGS = "official_ratings"
+    private const val KEY_PLAYED_FILTER = "played_filter"
     private const val KEY_UNPLAYED_ONLY = "unplayed_only"
     private const val KEY_FOUR_K = "four_k"
     private const val KEY_CLIENT_PACKAGE = "client_package"
@@ -84,9 +85,12 @@ object PreferencesManager {
         get() = stringSet(KEY_RATINGS)
         set(value) = putStringSet(KEY_RATINGS, value)
 
-    var unplayedOnly: Boolean
-        get() = preferences.getBoolean(KEY_UNPLAYED_ONLY, false)
-        set(value) = preferences.edit().putBoolean(KEY_UNPLAYED_ONLY, value).apply()
+    /** Falls back to the v1.0 `unplayed_only` boolean, which had no "watched only" state. */
+    var playedFilter: PlayedFilter
+        get() = PlayedFilter.from(preferences.getString(KEY_PLAYED_FILTER, null))
+            ?: if (preferences.getBoolean(KEY_UNPLAYED_ONLY, false)) PlayedFilter.UNPLAYED
+            else PlayedFilter.ALL
+        set(value) = preferences.edit().putString(KEY_PLAYED_FILTER, value.key).apply()
 
     var fourK: Boolean
         get() = preferences.getBoolean(KEY_FOUR_K, false)
@@ -115,7 +119,7 @@ object PreferencesManager {
         itemTypes = itemTypes,
         genres = genres,
         officialRatings = officialRatings,
-        unplayedOnly = unplayedOnly,
+        playedFilter = playedFilter,
     )
 
     /** Any change here invalidates the cached wallpaper list. */
@@ -125,7 +129,7 @@ object PreferencesManager {
         itemTypes.sorted().joinToString(","),
         genres.sorted().joinToString(","),
         officialRatings.sorted().joinToString(","),
-        unplayedOnly.toString(), fourK.toString(),
+        playedFilter.key, fourK.toString(),
     ).joinToString("|")
 
     fun export(): String = buildJsonObject {
