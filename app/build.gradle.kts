@@ -32,10 +32,21 @@ android {
         buildConfig = true
     }
 
+    signingConfigs {
+        // The debug keystore is regenerated whenever it goes missing, and every new identity means
+        // an uninstall before the next sideload. This one is checked in so the app id keeps its
+        // signature across machines and rebuilds; it guards nothing but that continuity.
+        create("release") {
+            storeFile = rootProject.file("keystore/release.jks")
+            storePassword = "android"
+            keyAlias = "plugin"
+            keyPassword = "android"
+        }
+    }
+
     buildTypes {
         getByName("release") {
-            // Sideloaded plugin: the debug keystore keeps release builds installable without a secret.
-            signingConfig = signingConfigs.getByName("debug")
+            signingConfig = signingConfigs.getByName("release")
             isShrinkResources = true
             isMinifyEnabled = true
             proguardFiles(

@@ -88,6 +88,10 @@ Requires JDK 17–21; **JDK 26 will not work** with the Android Gradle Plugin.
 JAVA_HOME=/usr/lib/jvm/java-21-temurin ./gradlew :app:assembleDebug
 ```
 
+Release builds are signed with `keystore/release.jks`, which is checked in. It protects nothing —
+it only keeps the app id's signature stable, so a new APK installs over the previous one instead of
+demanding an uninstall.
+
 ## Notes
 
 - In plain-backdrop mode, image URLs are handed to Projectivy, which fetches them in its own
