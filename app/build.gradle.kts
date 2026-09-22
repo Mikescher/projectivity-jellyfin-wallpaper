@@ -34,6 +34,8 @@ android {
 
     buildTypes {
         getByName("release") {
+            // Sideloaded plugin: the debug keystore keeps release builds installable without a secret.
+            signingConfig = signingConfigs.getByName("debug")
             isShrinkResources = true
             isMinifyEnabled = true
             proguardFiles(
