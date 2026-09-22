@@ -75,6 +75,12 @@ class SettingsFragment : GuidedStepSupportFragment() {
                 .description(PreferencesManager.itemTypes.sorted().joinToString(", ")).build()
         )
         actions.add(
+            GuidedAction.Builder(ctx).id(ACTION_BALANCE)
+                .title(R.string.setting_balance).description(R.string.setting_balance_desc)
+                .checkSetId(GuidedAction.CHECKBOX_CHECK_SET_ID)
+                .checked(PreferencesManager.balanceTypes).build()
+        )
+        actions.add(
             GuidedAction.Builder(ctx).id(ACTION_GENRES)
                 .title(R.string.setting_genres)
                 .description(summary(PreferencesManager.genres)).build()
@@ -147,6 +153,11 @@ class SettingsFragment : GuidedStepSupportFragment() {
             ACTION_FOUR_K -> {
                 PreferencesManager.fourK = !PreferencesManager.fourK
                 action.isChecked = PreferencesManager.fourK
+                notifyActionChanged(findActionPositionById(action.id))
+            }
+            ACTION_BALANCE -> {
+                PreferencesManager.balanceTypes = !PreferencesManager.balanceTypes
+                action.isChecked = PreferencesManager.balanceTypes
                 notifyActionChanged(findActionPositionById(action.id))
             }
             ACTION_REFRESH -> {
@@ -269,6 +280,7 @@ class SettingsFragment : GuidedStepSupportFragment() {
                 libraries = views.filter { it.collectionType in SUPPORTED_COLLECTION_TYPES }
                     .ifEmpty { views }
                 filters = filterData
+                info.id?.let { PreferencesManager.serverId = it }
                 status = getString(R.string.status_connected, info.serverName.orEmpty(), info.version.orEmpty())
                 findActionById(ACTION_USER)?.subActions = userSubActions()
                 updateDescription(ACTION_USER, PreferencesManager.userName.ifEmpty { getString(R.string.not_set) })
@@ -423,6 +435,7 @@ class SettingsFragment : GuidedStepSupportFragment() {
         private const val ACTION_STYLE = 13L
         private const val ACTION_SORT = 14L
         private const val ACTION_LIMIT = 15L
+        private const val ACTION_BALANCE = 16L
 
         private const val SUB_USER_BASE = 100_000L
         private const val SUB_CLIENT_BASE = 200_000L

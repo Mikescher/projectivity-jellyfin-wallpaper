@@ -50,6 +50,10 @@ class SettingsActivity : FragmentActivity() {
             PreferencesManager.wallpaperLimit = extras.getInt("wallpaper_limit")
             changed = true
         }
+        if (extras.containsKey("balance_types")) {
+            PreferencesManager.balanceTypes = extras.getBoolean("balance_types")
+            changed = true
+        }
         if (changed) WallpaperRepository.refreshAsync(this)
         return changed && extras.getBoolean("close", false)
     }

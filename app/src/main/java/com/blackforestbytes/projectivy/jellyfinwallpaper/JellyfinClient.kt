@@ -188,6 +188,7 @@ data class QueryConfig(
     val officialRatings: Set<String>,
     val playedFilter: PlayedFilter,
     val sortMode: SortMode = SortMode.RANDOM,
+    val balanceTypes: Boolean = false,
     val richMetadata: Boolean = false,
 )
 

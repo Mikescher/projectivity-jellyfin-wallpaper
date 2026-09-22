@@ -22,6 +22,7 @@ object PreferencesManager {
 
     private const val KEY_SERVER_URL = "server_url"
     private const val KEY_TOKEN = "token"
+    private const val KEY_SERVER_ID = "server_id"
     private const val KEY_USER_ID = "user_id"
     private const val KEY_USER_NAME = "user_name"
     private const val KEY_LIBRARIES = "libraries"
@@ -36,10 +37,14 @@ object PreferencesManager {
     private const val KEY_STYLE = "wallpaper_style"
     private const val KEY_LIMIT = "wallpaper_limit"
     private const val KEY_SORT = "sort_mode"
+    private const val KEY_BALANCE_TYPES = "balance_types"
 
-    /** Matches the choices the z9m plugin cycles through. */
-    val LIMIT_CHOICES = listOf(10, 25, 50, 100)
-    const val DEFAULT_LIMIT = 50
+    /**
+     * The top of the range matters: Projectivy reuses one list for a whole cache period, so at a
+     * 15 s rotation anything under a few hundred items starts repeating within the hour.
+     */
+    val LIMIT_CHOICES = listOf(25, 50, 100, 250, 500, 1000)
+    const val DEFAULT_LIMIT = 250
 
     lateinit var preferences: SharedPreferences
         private set
@@ -65,6 +70,11 @@ object PreferencesManager {
     var token: String
         get() = string(KEY_TOKEN)
         set(value) = putString(KEY_TOKEN, value.trim())
+
+    /** Jellyfin's own server id, from `/System/Info/Public`. Wholphin's deep link wants it. */
+    var serverId: String
+        get() = string(KEY_SERVER_ID)
+        set(value) = putString(KEY_SERVER_ID, value)
 
     var userId: String
         get() = string(KEY_USER_ID)
@@ -115,6 +125,11 @@ object PreferencesManager {
         get() = preferences.getInt(KEY_LIMIT, DEFAULT_LIMIT)
         set(value) = preferences.edit().putInt(KEY_LIMIT, value).apply()
 
+    /** Draw the same number of items per content type instead of per library population. */
+    var balanceTypes: Boolean
+        get() = preferences.getBoolean(KEY_BALANCE_TYPES, false)
+        set(value) = preferences.edit().putBoolean(KEY_BALANCE_TYPES, value).apply()
+
     var sortMode: SortMode
         get() = SortMode.from(preferences.getString(KEY_SORT, null))
         set(value) = preferences.edit().putString(KEY_SORT, value.key).apply()
@@ -140,6 +155,7 @@ object PreferencesManager {
         officialRatings = officialRatings,
         playedFilter = playedFilter,
         sortMode = sortMode,
+        balanceTypes = balanceTypes,
         richMetadata = wallpaperStyle == WallpaperStyle.COMPOSED,
     )
 
@@ -152,6 +168,7 @@ object PreferencesManager {
         officialRatings.sorted().joinToString(","),
         playedFilter.key, fourK.toString(),
         wallpaperStyle.key, sortMode.key, wallpaperLimit.toString(),
+        balanceTypes.toString(),
     ).joinToString("|")
 
     fun export(): String = buildJsonObject {

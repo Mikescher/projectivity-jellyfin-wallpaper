@@ -12,6 +12,8 @@
     <string name="setting_user">Jellyfin user</string>
     <string name="setting_libraries">Libraries</string>
     <string name="setting_item_types">Content types</string>
+    <string name="setting_balance">Mix types evenly</string>
+    <string name="setting_balance_desc">Draw the same number of movies and series instead of following library size</string>
     <string name="setting_genres">Genres</string>
     <string name="setting_ratings">Age ratings</string>
     <string name="setting_watch_state">Watch state</string>

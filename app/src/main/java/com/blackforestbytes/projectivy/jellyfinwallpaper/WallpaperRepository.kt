@@ -29,13 +29,13 @@ object WallpaperRepository {
 
     /**
      * Projectivy holds a wallpaper list for itemsCacheDurationMillis, which outlives our own
-     * refresh, so content:// URIs from an earlier list must still resolve. Keeping several
+     * refresh, so content:// URIs from an earlier list must still resolve. Keeping a couple of
      * refreshes' worth of metadata around covers that overlap.
      */
-    private const val META_RETAINED = 200
+    private fun metaRetained(limit: Int) = (limit * 2).coerceAtLeast(200)
 
     /** Shorter than the manifest's itemsCacheDurationMillis so a refresh is usually already done. */
-    private const val STALE_AFTER_MILLIS = 45L * 60L * 1000L
+    private const val STALE_AFTER_MILLIS = 20L * 60L * 1000L
 
     private val json = Json { ignoreUnknownKeys = true }
     private val scope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
@@ -101,21 +101,19 @@ object WallpaperRepository {
             PreferencesManager.token,
             PreferencesManager.deviceId,
         )
+        // The settings screen normally stores this, but a plugin seeded over ADB never opened it.
+        if (PreferencesManager.serverId.isEmpty()) {
+            runCatching { client.systemInfo().id }.getOrNull()
+                ?.let { PreferencesManager.serverId = it }
+        }
+
         val config = PreferencesManager.queryConfig()
         val style = PreferencesManager.wallpaperStyle
         val limit = PreferencesManager.wallpaperLimit
         val width = if (PreferencesManager.fourK) 3840 else 1920
         val height = if (PreferencesManager.fourK) 2160 else 1080
 
-        // /Items accepts a single parentId, so several libraries mean several queries.
-        val items = if (config.parentIds.size > 1) {
-            val perLibrary = (limit / config.parentIds.size).coerceAtLeast(5)
-            config.parentIds.flatMap { parentId ->
-                client.items(config.copy(parentIds = setOf(parentId)), perLibrary)
-            }.shuffled()
-        } else {
-            client.items(config, limit)
-        }
+        val items = fetchItems(client, config, limit)
 
         val composed = style == WallpaperStyle.COMPOSED
         val metas = mutableListOf<ComposeMeta>()
@@ -161,7 +159,7 @@ object WallpaperRepository {
                 )
             }
 
-        if (composed) retainMetas(context, metas)
+        if (composed) retainMetas(context, metas, metaRetained(limit))
 
         writeJson(
             cacheFile(context),
@@ -175,10 +173,50 @@ object WallpaperRepository {
         return wallpapers.size
     }
 
+    /**
+     * Fans the query out and returns the merged pool.
+     *
+     * Two things force several requests: /Items accepts a single parentId, and balancing needs one
+     * quota per content type rather than one draw across all of them — an unbalanced draw follows
+     * library population, so a few hundred movies next to a few thousand episodes all but disappear.
+     */
+    private fun fetchItems(client: JellyfinClient, config: QueryConfig, limit: Int): List<Item> {
+        val buckets = if (config.balanceTypes && config.itemTypes.size > 1) {
+            config.itemTypes.map { setOf(it) }
+        } else {
+            listOf(config.itemTypes)
+        }
+        if (buckets.size == 1) return fetchBucket(client, config, limit)
+
+        val perBucket = (limit / buckets.size).coerceAtLeast(1)
+        val drawn = buckets.map { types -> fetchBucket(client, config.copy(itemTypes = types), perBucket) }
+        // Round-robin rather than concatenate: Projectivy may only ever show a prefix of the list,
+        // and every prefix should still hold the mix.
+        val mixed = (0 until drawn.maxOf { it.size })
+            .flatMap { i -> drawn.mapNotNull { it.getOrNull(i) } }
+
+        // A type with nothing behind it — Series while only a movie library is selected — would
+        // otherwise just shorten the list, so its unused quota goes back to the other types.
+        if (mixed.size >= limit) return mixed
+        val taken = mixed.mapTo(mutableSetOf()) { it.id }
+        return mixed + fetchBucket(client, config, limit).filter { taken.add(it.id) }
+    }
+
+    private fun fetchBucket(client: JellyfinClient, config: QueryConfig, target: Int): List<Item> {
+        if (config.parentIds.size <= 1) return client.items(config, target)
+        // Each library is asked for more than its even share, because one that holds none of this
+        // bucket's types contributes nothing and would otherwise leave the quota short.
+        val perLibrary = (target * 2 / config.parentIds.size).coerceIn(1, target)
+        return config.parentIds
+            .flatMap { client.items(config.copy(parentIds = setOf(it)), perLibrary) }
+            .shuffled()
+            .take(target)
+    }
+
     /** New entries win; older ones survive until they fall off the end. */
-    private fun retainMetas(context: Context, fresh: List<ComposeMeta>) {
+    private fun retainMetas(context: Context, fresh: List<ComposeMeta>, retained: Int) {
         val previous = readJson<ComposeMetaFile>(metaFile(context))?.entries ?: emptyList()
-        val merged = (fresh + previous).distinctBy { it.itemId }.take(META_RETAINED)
+        val merged = (fresh + previous).distinctBy { it.itemId }.take(retained)
         writeJson(metaFile(context), ComposeMetaFile(merged))
     }
 

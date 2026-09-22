@@ -79,9 +79,14 @@ class WallpaperImageProvider : ContentProvider() {
         }
     }
 
+    /** Drops the oldest frames until the directory is back under [MAX_CACHE_BYTES]. */
     private fun trim(dir: File) {
-        val files = dir.listFiles()?.sortedBy { it.lastModified() } ?: return
-        files.take((files.size - MAX_CACHED).coerceAtLeast(0)).forEach { it.delete() }
+        val files = dir.listFiles()?.sortedByDescending { it.lastModified() } ?: return
+        var kept = 0L
+        files.forEach { file ->
+            kept += file.length()
+            if (kept > MAX_CACHE_BYTES) file.delete()
+        }
     }
 
     override fun query(
@@ -96,7 +101,12 @@ class WallpaperImageProvider : ContentProvider() {
     companion object {
         private const val TAG = "WallpaperImageProvider"
         private const val MIME_TYPE = "image/jpeg"
-        private const val MAX_CACHED = 60
+        /**
+         * Budget rather than a file count, because a 4K frame is roughly four times a 1080p one.
+         * It has to cover a whole item count at the rotation interval, or cycling back to a
+         * wallpaper re-downloads and re-renders it.
+         */
+        private const val MAX_CACHE_BYTES = 128L * 1024L * 1024L
         private const val PATH = "image"
 
         /** Serialises rendering: two 4K canvases at once is 66 MB, and duplicate work besides. */

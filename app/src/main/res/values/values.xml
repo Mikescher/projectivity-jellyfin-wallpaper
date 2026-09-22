@@ -1,4 +1,4 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
-    <integer name="items_cache_duration_millis">3600000</integer>
+    <integer name="items_cache_duration_millis">1800000</integer>
 </resources>

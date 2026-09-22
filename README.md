@@ -31,19 +31,33 @@ carries it.
 
 - Libraries
 - Content types (Movie / Series)
+- Mix types evenly
 - Genres
 - Age ratings
 - Watch state (all / unwatched only / watched only)
 - Order (random / recently added)
-- Item count (10 / 25 / 50 / 100)
+- Item count (25 / 50 / 100 / 250 / 500 / 1000)
 
 Leaving a list empty means "allow everything".
+
+**Mix types evenly** draws the same number of items per content type. Without it a single query
+covers all types at once, so the mix follows library population — a few hundred movies next to a few
+thousand series show up as almost nothing but series.
+
+**Item count** is what decides how long the launcher goes before repeating itself. Projectivy asks
+for the list once and reuses it for the plugin's cache period (30 minutes), so at a 15-second
+rotation interval 100 items are exhausted in 25 minutes. Pick a count that covers the period: 250
+items last an hour, 500 two hours. The list is reshuffled on every request, and a new random draw is
+fetched from Jellyfin whenever the cached one is older than 20 minutes.
 
 ## Open with
 
 Pressing OK on a wallpaper opens the item in a Jellyfin client. **Auto-detect** picks the first of
 Wholphin, Moonfin, Jellyfin for Android TV, Findroid, Fladder or Jellyfin Mobile that is installed;
 any of them can also be pinned explicitly, or the action disabled with *None*.
+
+Wholphin (`wholphin://view`), Moonfin, Fladder (`fladder://details`) and Jellyfin for Android TV
+land on the item itself. Findroid publishes no deep link, so it is only brought to the foreground.
 
 ## Setup
 
@@ -61,7 +75,8 @@ adb shell am start -n com.blackforestbytes.projectivy.jellyfinwallpaper/.Setting
   --es token "<api-key>" \
   --es wallpaper_style composed \
   --es sort_mode random \
-  --ei wallpaper_limit 50 \
+  --ei wallpaper_limit 250 \
+  --ez balance_types true \
   --ez close true
 ```
 

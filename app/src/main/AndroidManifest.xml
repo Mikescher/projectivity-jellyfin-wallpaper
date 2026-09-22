@@ -22,8 +22,8 @@
         <package android:name="org.moonfin.androidtv" />
         <package android:name="org.jellyfin.androidtv" />
         <package android:name="org.jellyfin.androidtv.debug" />
-        <package android:name="org.findroid" />
-        <package android:name="tv.fladder" />
+        <package android:name="dev.jdtech.jellyfin" />
+        <package android:name="nl.jknaapen.fladder" />
         <package android:name="org.jellyfin.mobile" />
     </queries>
 
