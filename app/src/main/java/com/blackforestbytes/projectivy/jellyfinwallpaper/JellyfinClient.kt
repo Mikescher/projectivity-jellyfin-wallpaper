@@ -101,17 +101,22 @@ class JellyfinClient(
         return QueryFiltersLegacy(genres.toList(), ratings.toList(), years.toList())
     }
 
-    fun randomItems(config: QueryConfig, limit: Int): List<Item> {
+    fun items(config: QueryConfig, limit: Int): List<Item> {
         val b = root().newBuilder()
             .addPathSegments("Items")
             .addQueryParameter("userId", config.userId)
             .addQueryParameter("recursive", "true")
-            .addQueryParameter("sortBy", "Random")
+            .addQueryParameter("sortBy", config.sortMode.sortBy)
+            .addQueryParameter("sortOrder", "Descending")
             .addQueryParameter("limit", limit.toString())
             // Filters to items that actually own a backdrop. There is no `hasImages` parameter.
             .addQueryParameter("imageTypes", "Backdrop")
             .addQueryParameter("enableTotalRecordCount", "false")
-            .addQueryParameter("fields", "Genres,ProductionYear")
+            // Everything else the composer needs is part of BaseItemDto already; Overview is not.
+            .addQueryParameter(
+                "fields",
+                if (config.richMetadata) "Genres,ProductionYear,Overview" else "Genres,ProductionYear"
+            )
 
         if (config.itemTypes.isNotEmpty()) {
             b.addQueryParameter("includeItemTypes", config.itemTypes.joinToString(","))
@@ -137,7 +142,7 @@ class JellyfinClient(
      * Item image endpoints carry no [Authorize] attribute, so this URL needs no token and can be
      * handed straight to Projectivy, which fetches it in its own process.
      */
-    fun backdropUrl(item: Item, width: Int, height: Int): String? {
+    fun backdropUrl(item: Item, width: Int, height: Int, fill: Boolean): String? {
         // Jellyfin only fills the Parent* fields when a parent backdrop really exists, so both
         // branches are backed by an image that is known to be there.
         val (id, tag) = when {
@@ -146,14 +151,27 @@ class JellyfinClient(
                 item.parentBackdropItemId to item.parentBackdropImageTags.first()
             else -> return null
         }
-        val b = root().newBuilder()
+        return root().newBuilder()
             .addPathSegments("Items/$id/Images/Backdrop/0")
-            .addQueryParameter("fillWidth", width.toString())
-            .addQueryParameter("fillHeight", height.toString())
+            // fill* crops to exactly this box; max* only bounds it and keeps the source aspect,
+            // which is what the composer wants since it does its own letterboxing.
+            .addQueryParameter(if (fill) "fillWidth" else "maxWidth", width.toString())
+            .addQueryParameter(if (fill) "fillHeight" else "maxHeight", height.toString())
             .addQueryParameter("quality", "90")
             // The tag turns on a strong ETag plus immutable caching; without it caching is weak.
             .addQueryParameter("tag", tag)
-        return b.build().toString()
+            .build().toString()
+    }
+
+    /** Transparent title logo, when the item has one. */
+    fun logoUrl(item: Item, maxWidth: Int): String? {
+        val tag = item.imageTags["Logo"] ?: return null
+        return root().newBuilder()
+            .addPathSegments("Items/${item.id}/Images/Logo")
+            .addQueryParameter("maxWidth", maxWidth.toString())
+            .addQueryParameter("quality", "90")
+            .addQueryParameter("tag", tag)
+            .build().toString()
     }
 
     companion object {
@@ -169,4 +187,25 @@ data class QueryConfig(
     val genres: Set<String>,
     val officialRatings: Set<String>,
     val playedFilter: PlayedFilter,
+    val sortMode: SortMode = SortMode.RANDOM,
+    val richMetadata: Boolean = false,
 )
+
+/**
+ * Downloads item images. Separate from [JellyfinClient] because these endpoints carry no
+ * [Authorize] attribute, so the [WallpaperImageProvider] can use them without any credentials.
+ */
+object ImageFetcher {
+
+    private val http = OkHttpClient.Builder()
+        .connectTimeout(10, TimeUnit.SECONDS)
+        .readTimeout(30, TimeUnit.SECONDS)
+        .build()
+
+    fun bytes(url: String): ByteArray? {
+        val request = Request.Builder().url(url).build()
+        return http.newCall(request).execute().use { response ->
+            if (response.isSuccessful) response.body.bytes() else null
+        }
+    }
+}

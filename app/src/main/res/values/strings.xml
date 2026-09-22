@@ -18,8 +18,21 @@
     <string name="watch_state_all">All</string>
     <string name="watch_state_unwatched">Unwatched only</string>
     <string name="watch_state_watched">Watched only</string>
+    <string name="setting_style">Wallpaper style</string>
+    <string name="style_backdrop">Plain backdrop</string>
+    <string name="style_backdrop_desc">The raw Jellyfin backdrop, with Projectivy\'s own title overlay</string>
+    <string name="style_composed">Composed card</string>
+    <string name="style_composed_desc">Backdrop, logo, rating and plot rendered into the image</string>
+    <string name="setting_sort">Order</string>
+    <string name="sort_random">Random</string>
+    <string name="sort_recent">Recently added</string>
+    <string name="setting_limit">Item count</string>
+    <string name="client_auto">Auto-detect</string>
+    <string name="client_none">None</string>
+    <string name="client_auto_detected">Auto-detect (%1$s)</string>
+
     <string name="setting_4k">4K backdrops</string>
-    <string name="setting_4k_desc">Request 3840x2160 instead of 1920x1080</string>
+    <string name="setting_4k_desc">Render at 3840x2160 instead of 1920x1080</string>
     <string name="setting_client">Open with</string>
     <string name="setting_refresh">Refresh now</string>
     <string name="setting_refresh_desc">Fetch a new set of backdrops immediately</string>

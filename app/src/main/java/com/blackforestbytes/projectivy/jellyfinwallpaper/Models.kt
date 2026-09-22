@@ -29,13 +29,21 @@ data class Item(
     @SerialName("CollectionType") val collectionType: String? = null,
     @SerialName("ProductionYear") val productionYear: Int? = null,
     @SerialName("Genres") val genres: List<String> = emptyList(),
+    @SerialName("Overview") val overview: String? = null,
+    @SerialName("OfficialRating") val officialRating: String? = null,
+    @SerialName("CommunityRating") val communityRating: Double? = null,
+    @SerialName("RunTimeTicks") val runTimeTicks: Long? = null,
     @SerialName("SeriesId") val seriesId: String? = null,
     @SerialName("SeriesName") val seriesName: String? = null,
     @SerialName("ImageTags") val imageTags: Map<String, String> = emptyMap(),
     @SerialName("BackdropImageTags") val backdropImageTags: List<String> = emptyList(),
     @SerialName("ParentBackdropItemId") val parentBackdropItemId: String? = null,
     @SerialName("ParentBackdropImageTags") val parentBackdropImageTags: List<String> = emptyList(),
-)
+) {
+    /** One tick is 100ns. */
+    val runtimeMinutes: Int?
+        get() = runTimeTicks?.takeIf { it > 0 }?.let { (it / 10_000_000L / 60L).toInt() }
+}
 
 /** `GET /Items/Filters` — the legacy shape, the only one that also returns ratings and years. */
 @Serializable
@@ -56,6 +64,28 @@ enum class PlayedFilter(val key: String) {
     }
 }
 
+/** How a wallpaper image is produced. */
+enum class WallpaperStyle(val key: String) {
+    /** Hand Projectivy the Jellyfin backdrop URL and let it draw its own title overlay. */
+    BACKDROP("backdrop"),
+
+    /** Render backdrop, logo and metadata into one image, served over a `content://` URI. */
+    COMPOSED("composed");
+
+    companion object {
+        fun from(key: String?): WallpaperStyle = entries.firstOrNull { it.key == key } ?: BACKDROP
+    }
+}
+
+enum class SortMode(val key: String, val sortBy: String) {
+    RANDOM("random", "Random"),
+    RECENT("recent", "DateCreated");
+
+    companion object {
+        fun from(key: String?): SortMode = entries.firstOrNull { it.key == key } ?: RANDOM
+    }
+}
+
 /** One entry of the on-disk wallpaper cache. */
 @Serializable
 data class CachedWallpaper(
@@ -70,4 +100,29 @@ data class WallpaperCacheFile(
     val fetchedAtMillis: Long,
     val configFingerprint: String,
     val wallpapers: List<CachedWallpaper>,
+)
+
+/**
+ * Everything [WallpaperComposer] needs for one item.
+ *
+ * Kept in its own store rather than in [WallpaperCacheFile], because Projectivy holds wallpaper
+ * URIs for longer than we keep a list, and a `content://` URI has to stay resolvable until it does.
+ */
+@Serializable
+data class ComposeMeta(
+    val itemId: String,
+    val backdropUrl: String,
+    val logoUrl: String? = null,
+    val title: String,
+    val year: Int? = null,
+    val runtimeMinutes: Int? = null,
+    val communityRating: Double? = null,
+    val officialRating: String? = null,
+    val genres: List<String> = emptyList(),
+    val overview: String? = null,
+)
+
+@Serializable
+data class ComposeMetaFile(
+    val entries: List<ComposeMeta> = emptyList(),
 )

@@ -90,6 +90,21 @@ class SettingsFragment : GuidedStepSupportFragment() {
                 .subActions(playedFilterSubActions()).build()
         )
         actions.add(
+            GuidedAction.Builder(ctx).id(ACTION_STYLE)
+                .title(R.string.setting_style).description(styleLabel())
+                .subActions(styleSubActions()).build()
+        )
+        actions.add(
+            GuidedAction.Builder(ctx).id(ACTION_SORT)
+                .title(R.string.setting_sort).description(sortLabel())
+                .subActions(sortSubActions()).build()
+        )
+        actions.add(
+            GuidedAction.Builder(ctx).id(ACTION_LIMIT)
+                .title(R.string.setting_limit).description(limitLabel())
+                .subActions(limitSubActions()).build()
+        )
+        actions.add(
             GuidedAction.Builder(ctx).id(ACTION_FOUR_K)
                 .title(R.string.setting_4k).description(R.string.setting_4k_desc)
                 .checkSetId(GuidedAction.CHECKBOX_CHECK_SET_ID)
@@ -176,8 +191,22 @@ class SettingsFragment : GuidedStepSupportFragment() {
             }
             action.id >= SUB_CLIENT_BASE && action.id < SUB_CLIENT_BASE + 1000 -> {
                 val index = (action.id - SUB_CLIENT_BASE).toInt()
-                PreferencesManager.clientPackage = CLIENT_PACKAGES[index]
+                PreferencesManager.clientPackage = clientValues()[index]
                 updateDescription(ACTION_CLIENT, clientLabel())
+            }
+            action.id >= SUB_STYLE_BASE && action.id < SUB_STYLE_BASE + 1000 -> {
+                PreferencesManager.wallpaperStyle =
+                    WallpaperStyle.entries[(action.id - SUB_STYLE_BASE).toInt()]
+                updateDescription(ACTION_STYLE, styleLabel())
+            }
+            action.id >= SUB_SORT_BASE && action.id < SUB_SORT_BASE + 1000 -> {
+                PreferencesManager.sortMode = SortMode.entries[(action.id - SUB_SORT_BASE).toInt()]
+                updateDescription(ACTION_SORT, sortLabel())
+            }
+            action.id >= SUB_LIMIT_BASE && action.id < SUB_LIMIT_BASE + 1000 -> {
+                PreferencesManager.wallpaperLimit =
+                    PreferencesManager.LIMIT_CHOICES[(action.id - SUB_LIMIT_BASE).toInt()]
+                updateDescription(ACTION_LIMIT, limitLabel())
             }
         }
         return true
@@ -205,6 +234,7 @@ class SettingsFragment : GuidedStepSupportFragment() {
         updateDescription(ACTION_GENRES, summary(PreferencesManager.genres))
         updateDescription(ACTION_RATINGS, summary(PreferencesManager.officialRatings))
         updateDescription(ACTION_STATUS, status.ifEmpty { getString(R.string.status_unknown) })
+        updateDescription(ACTION_CLIENT, clientLabel())
     }
 
     private fun loadRemoteData() {
@@ -288,19 +318,75 @@ class SettingsFragment : GuidedStepSupportFragment() {
     private fun playedFilterLabel(): String =
         getString(PLAYED_FILTER_LABELS[PreferencesManager.playedFilter.ordinal])
 
-    private fun clientSubActions(): MutableList<GuidedAction> = CLIENT_PACKAGES.mapIndexed { index, pkg ->
-        GuidedAction.Builder(context)
-            .id(SUB_CLIENT_BASE + index)
-            .title(CLIENT_LABELS[index])
-            .checkSetId(GuidedAction.DEFAULT_CHECK_SET_ID)
-            .checked(pkg == PreferencesManager.clientPackage)
-            .build()
-    }.toMutableList()
+    private fun clientValues(): List<String> =
+        listOf(DeepLinks.AUTO, DeepLinks.NONE) + DeepLinks.PLAYERS.map { it.packageName }
+
+    private fun clientLabels(): List<String> =
+        listOf(getString(R.string.client_auto), getString(R.string.client_none)) +
+            DeepLinks.PLAYERS.map { it.label }
+
+    private fun clientSubActions(): MutableList<GuidedAction> {
+        val values = clientValues()
+        val labels = clientLabels()
+        return values.mapIndexed { index, pkg ->
+            GuidedAction.Builder(context)
+                .id(SUB_CLIENT_BASE + index)
+                .title(labels[index])
+                .checkSetId(GuidedAction.DEFAULT_CHECK_SET_ID)
+                .checked(pkg == PreferencesManager.clientPackage)
+                .build()
+        }.toMutableList()
+    }
 
     private fun clientLabel(): String {
-        val index = CLIENT_PACKAGES.indexOf(PreferencesManager.clientPackage)
-        return if (index >= 0) CLIENT_LABELS[index] else CLIENT_LABELS[0]
+        val selected = PreferencesManager.clientPackage
+        val index = clientValues().indexOf(selected)
+        val label = if (index >= 0) clientLabels()[index] else getString(R.string.client_none)
+        if (selected != DeepLinks.AUTO) return label
+        val detected = DeepLinks.resolve(requireContext(), DeepLinks.AUTO)
+        return getString(
+            R.string.client_auto_detected,
+            detected?.label ?: getString(R.string.client_none)
+        )
     }
+
+    private fun styleSubActions(): MutableList<GuidedAction> =
+        WallpaperStyle.entries.mapIndexed { index, style ->
+            GuidedAction.Builder(context)
+                .id(SUB_STYLE_BASE + index)
+                .title(getString(STYLE_LABELS[index]))
+                .description(getString(STYLE_DESCRIPTIONS[index]))
+                .checkSetId(GuidedAction.DEFAULT_CHECK_SET_ID)
+                .checked(style == PreferencesManager.wallpaperStyle)
+                .build()
+        }.toMutableList()
+
+    private fun styleLabel(): String =
+        getString(STYLE_LABELS[PreferencesManager.wallpaperStyle.ordinal])
+
+    private fun sortSubActions(): MutableList<GuidedAction> =
+        SortMode.entries.mapIndexed { index, mode ->
+            GuidedAction.Builder(context)
+                .id(SUB_SORT_BASE + index)
+                .title(getString(SORT_LABELS[index]))
+                .checkSetId(GuidedAction.DEFAULT_CHECK_SET_ID)
+                .checked(mode == PreferencesManager.sortMode)
+                .build()
+        }.toMutableList()
+
+    private fun sortLabel(): String = getString(SORT_LABELS[PreferencesManager.sortMode.ordinal])
+
+    private fun limitSubActions(): MutableList<GuidedAction> =
+        PreferencesManager.LIMIT_CHOICES.mapIndexed { index, limit ->
+            GuidedAction.Builder(context)
+                .id(SUB_LIMIT_BASE + index)
+                .title(limit.toString())
+                .checkSetId(GuidedAction.DEFAULT_CHECK_SET_ID)
+                .checked(limit == PreferencesManager.wallpaperLimit)
+                .build()
+        }.toMutableList()
+
+    private fun limitLabel(): String = PreferencesManager.wallpaperLimit.toString()
 
     private fun maskedToken(): String {
         val token = PreferencesManager.token
@@ -334,10 +420,24 @@ class SettingsFragment : GuidedStepSupportFragment() {
         private const val ACTION_FOUR_K = 10L
         private const val ACTION_CLIENT = 11L
         private const val ACTION_REFRESH = 12L
+        private const val ACTION_STYLE = 13L
+        private const val ACTION_SORT = 14L
+        private const val ACTION_LIMIT = 15L
 
         private const val SUB_USER_BASE = 100_000L
         private const val SUB_CLIENT_BASE = 200_000L
         private const val SUB_PLAYED_BASE = 300_000L
+        private const val SUB_STYLE_BASE = 400_000L
+        private const val SUB_SORT_BASE = 500_000L
+        private const val SUB_LIMIT_BASE = 600_000L
+
+        /** Indexed by [WallpaperStyle.ordinal]. */
+        private val STYLE_LABELS = listOf(R.string.style_backdrop, R.string.style_composed)
+        private val STYLE_DESCRIPTIONS =
+            listOf(R.string.style_backdrop_desc, R.string.style_composed_desc)
+
+        /** Indexed by [SortMode.ordinal]. */
+        private val SORT_LABELS = listOf(R.string.sort_random, R.string.sort_recent)
 
         /** Indexed by [PlayedFilter.ordinal]. */
         private val PLAYED_FILTER_LABELS = listOf(
@@ -349,7 +449,5 @@ class SettingsFragment : GuidedStepSupportFragment() {
         private val ITEM_TYPE_VALUES = listOf("Movie", "Series")
         private val SUPPORTED_COLLECTION_TYPES = setOf("movies", "tvshows", "boxsets", "homevideos")
 
-        private val CLIENT_PACKAGES = listOf("", DeepLinks.WHOLPHIN, DeepLinks.JELLYFIN, DeepLinks.MOONFIN)
-        private val CLIENT_LABELS = listOf("None", "Wholphin", "Jellyfin", "Moonfin")
     }
 }

@@ -12,9 +12,19 @@
         android:name="android.software.leanback"
         android:required="true" />
 
-    <!-- Needed on Android 11+ to see the launcher and to target the refresh broadcast at it. -->
+    <!--
+        Android 11+ package visibility: the launcher, so the refresh broadcast can be targeted at
+        it, and every player the "Open with" setting can deep-link into.
+    -->
     <queries>
         <package android:name="com.spocky.projengmenu" />
+        <package android:name="com.github.damontecres.wholphin" />
+        <package android:name="org.moonfin.androidtv" />
+        <package android:name="org.jellyfin.androidtv" />
+        <package android:name="org.jellyfin.androidtv.debug" />
+        <package android:name="org.findroid" />
+        <package android:name="tv.fladder" />
+        <package android:name="org.jellyfin.mobile" />
     </queries>
 
     <application
@@ -24,6 +34,7 @@
         android:icon="@mipmap/ic_launcher"
         android:banner="@mipmap/ic_banner"
         android:usesCleartextTraffic="true"
+        android:largeHeap="true"
         android:theme="@style/Theme.ProjectivyWallpaperProvider">
 
         <activity
@@ -58,9 +69,20 @@
                 android:name="itemsCacheDurationMillis"
                 android:value="@integer/items_cache_duration_millis" />
 
-            <!-- TIME_ELAPSED only; card-focused events would fire roughly once a second. -->
-            <meta-data android:name="updateMode" android:value="1" />
+            <!-- TIME_ELAPSED | LAUNCHER_IDLE_MODE_CHANGED; card-focused events would fire
+                 roughly once a second. -->
+            <meta-data android:name="updateMode" android:value="17" />
         </service>
+
+        <!--
+            Serves composed wallpapers. Must be exported: Projectivy receives these URIs over AIDL
+            rather than in an Intent, so there is no per-URI grant to hand it.
+        -->
+        <provider
+            android:name=".WallpaperImageProvider"
+            android:authorities="${applicationId}.provider"
+            android:exported="true"
+            android:grantUriPermissions="true" />
 
     </application>
 

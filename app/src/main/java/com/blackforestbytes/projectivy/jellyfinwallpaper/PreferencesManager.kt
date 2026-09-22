@@ -33,6 +33,13 @@ object PreferencesManager {
     private const val KEY_FOUR_K = "four_k"
     private const val KEY_CLIENT_PACKAGE = "client_package"
     private const val KEY_DEVICE_ID = "device_id"
+    private const val KEY_STYLE = "wallpaper_style"
+    private const val KEY_LIMIT = "wallpaper_limit"
+    private const val KEY_SORT = "sort_mode"
+
+    /** Matches the choices the z9m plugin cycles through. */
+    val LIMIT_CHOICES = listOf(10, 25, 50, 100)
+    const val DEFAULT_LIMIT = 50
 
     lateinit var preferences: SharedPreferences
         private set
@@ -97,8 +104,20 @@ object PreferencesManager {
         set(value) = preferences.edit().putBoolean(KEY_FOUR_K, value).apply()
 
     var clientPackage: String
-        get() = string(KEY_CLIENT_PACKAGE)
+        get() = string(KEY_CLIENT_PACKAGE, DeepLinks.AUTO)
         set(value) = putString(KEY_CLIENT_PACKAGE, value)
+
+    var wallpaperStyle: WallpaperStyle
+        get() = WallpaperStyle.from(preferences.getString(KEY_STYLE, null))
+        set(value) = preferences.edit().putString(KEY_STYLE, value.key).apply()
+
+    var wallpaperLimit: Int
+        get() = preferences.getInt(KEY_LIMIT, DEFAULT_LIMIT)
+        set(value) = preferences.edit().putInt(KEY_LIMIT, value).apply()
+
+    var sortMode: SortMode
+        get() = SortMode.from(preferences.getString(KEY_SORT, null))
+        set(value) = preferences.edit().putString(KEY_SORT, value.key).apply()
 
     /** Stable per-install id; Jellyfin ties the session to it. */
     val deviceId: String
@@ -120,6 +139,8 @@ object PreferencesManager {
         genres = genres,
         officialRatings = officialRatings,
         playedFilter = playedFilter,
+        sortMode = sortMode,
+        richMetadata = wallpaperStyle == WallpaperStyle.COMPOSED,
     )
 
     /** Any change here invalidates the cached wallpaper list. */
@@ -130,6 +151,7 @@ object PreferencesManager {
         genres.sorted().joinToString(","),
         officialRatings.sorted().joinToString(","),
         playedFilter.key, fourK.toString(),
+        wallpaperStyle.key, sortMode.key, wallpaperLimit.toString(),
     ).joinToString("|")
 
     fun export(): String = buildJsonObject {
