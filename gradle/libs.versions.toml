@@ -4,8 +4,8 @@ appId = "com.blackforestbytes.projectivy.jellyfinwallpaper"
 compileSdk = "37"
 minSdk = "23"
 targetSdk = "37"
-versionCode = "3"
-versionName = "1.1"
+versionCode = "4"
+versionName = "1.2"
 
 # Kotlin
 kotlin = "2.3.21"  # https://github.com/JetBrains/kotlin/releases
