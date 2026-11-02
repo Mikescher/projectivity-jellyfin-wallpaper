@@ -67,12 +67,12 @@ Jellyfin Wallpapers**, and open its settings with the gear button.
 Enter the server URL (`http://10.8.0.14:8096`) and API key. The user, library and genre pickers
 populate themselves once the connection succeeds.
 
-Settings can also be seeded over ADB:
+The other settings can also be seeded over ADB. The server URL and API key are deliberately not
+seedable: the settings activity is exported, so any installed app could launch it to point the
+stored key at a server of its own. Enter those two in the settings screen.
 
 ```sh
 adb shell am start -n com.blackforestbytes.projectivy.jellyfinwallpaper/.SettingsActivity \
-  --es server_url "http://10.8.0.14:8096" \
-  --es token "<api-key>" \
   --es wallpaper_style composed \
   --es sort_mode random \
   --ei wallpaper_limit 250 \

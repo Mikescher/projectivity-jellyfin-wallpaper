@@ -28,17 +28,17 @@ class SettingsActivity : FragmentActivity() {
     }
 
     /**
-     * Lets the whole plugin be provisioned without a remote:
+     * Lets everything but the connection be provisioned without a remote:
      *
      *   adb shell am start -n <pkg>/.SettingsActivity \
-     *     --es server_url http://10.8.0.14:8096 --es token <key> --es user_id <guid> \
-     *     --es wallpaper_style composed --es sort_mode random --ei wallpaper_limit 50 --ez close true
+     *     --es user_id <guid> --es wallpaper_style composed --es sort_mode random \
+     *     --ei wallpaper_limit 50 --ez close true
      */
     private fun applySeedExtras(intent: Intent?): Boolean {
         val extras = intent?.extras ?: return false
         var changed = false
-        extras.getString("server_url")?.let { PreferencesManager.serverUrl = it; changed = true }
-        extras.getString("token")?.let { PreferencesManager.token = it; changed = true }
+        // server_url and token are not seedable: the activity is exported, so any app could launch
+        // it to point the stored key at its own server. Enter them in the settings screen instead.
         extras.getString("user_id")?.let { PreferencesManager.userId = it; changed = true }
         extras.getString("wallpaper_style")?.let {
             PreferencesManager.wallpaperStyle = WallpaperStyle.from(it); changed = true
