@@ -171,8 +171,14 @@ object PreferencesManager {
         balanceTypes.toString(),
     ).joinToString("|")
 
+    /**
+     * Never crosses the exported binder: any app on the device can bind the service, so exporting
+     * the token would leak it and importing the URL would let a caller redirect it.
+     */
+    private val PRIVATE_KEYS = setOf(KEY_SERVER_URL, KEY_TOKEN)
+
     fun export(): String = buildJsonObject {
-        preferences.all.forEach { (key, value) ->
+        preferences.all.filterKeys { it !in PRIVATE_KEYS }.forEach { (key, value) ->
             when (value) {
                 is Int -> put(key, JsonPrimitive(value))
                 is Long -> put(key, JsonPrimitive(value))
@@ -187,7 +193,7 @@ object PreferencesManager {
         val element = json.parseToJsonElement(prefs)
         if (element !is JsonObject) throw IllegalArgumentException("Expected a JSON object")
         val editor = preferences.edit()
-        element.forEach { (key, value) ->
+        element.filterKeys { it !in PRIVATE_KEYS }.forEach { (key, value) ->
             when (value) {
                 is JsonPrimitive -> when {
                     value.isString -> editor.putString(key, value.content)
